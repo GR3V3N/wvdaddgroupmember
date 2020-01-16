@@ -7,18 +7,27 @@ $TeneantName = "defaultTeneant"
 $HostPoolName = "WVD-HP-TEST-01"
 $ApplicationGroupName = "WVD-APP-GROUP-TEST-01"
 $SecurityGroup = "Default-Users-AppGroup"
-$AadTenantId = "XXXX-XXXX-XXXX-XXXX-XXXXXXXX"
+$AadTenantId = "XXXX-XXXXXXX-XXXXX-XXXXXX"
 
 ########WVD Service Account (The one used for creating the WVD solution, hostpool,appgroup and so on.)
-$wvdcredz = Get-AutomationPSCredential -Name 'svc_testservice'
+$wvdcredz = Get-AutomationPSCredential -Name 'svc_WVDTestAdmin'
+$ADServiceAccountCredz = Get-AutomationPSCredential -Name 'runbookExecuter'
 
 ########Establish connection to wvd so we can manage it
 Add-RdsAccount -DeploymentUrl "https://rdbroker.wvd.microsoft.com" -ServicePrincipal -AadTenantId $AadTenantId -Credential $wvdcredz
 
-########Default App Group
+########Default script part
 
-$defaultUsers = Get-ADGroupMember -Identity $SecurityGroup | Get-ADUser | select userPrincipalName -ExpandProperty userPrincipalName
-$defaultUsersappgroup = Get-RdsAppGroupUser $TeneantName $HostPoolName $ApplicationGroupName | select UserPrincipalName -ExpandProperty UserPrincipalName
+try {
+
+$defaultUsers = Get-ADGroupMember -Identity $SecurityGroup -Credential $ADServiceAccountCredz | Get-ADUser -Credential $ADServiceAccountCredz | select userPrincipalName -ExpandProperty userPrincipalName 
+$defaultUsersappgroup = Get-RdsAppGroupUser $TeneantName $HostPoolName $ApplicationGroupName | select UserPrincipalName -ExpandProperty UserPrincipalName 
+
+}catch {
+
+throw $_
+
+}
 
 if (($defaultUsers -ne $null -or '') -and ($defaultUsersappgroup -ne $null -or '')) {
 
